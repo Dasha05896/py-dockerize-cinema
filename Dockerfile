@@ -3,28 +3,27 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
-# Встановлюємо системні пакети, які потрібні завжди
+# Спочатку копіюємо файл зі списком бібліотек
+COPY requirements.txt .
+
+# Тепер запускаємо об'єднану команду інсталяції та очищення
 RUN apk add --update --no-cache \
     postgresql-client \
     jpeg-dev \
     zlib-dev \
-    libpq
-
-# Встановлюємо пакети для збірки ТИМЧАСОВО
-RUN apk add --update --no-cache --virtual .tmp-build-deps \
+    libpq && \
+    apk add --update --no-cache --virtual .tmp-build-deps \
     gcc \
     libc-dev \
     linux-headers \
     postgresql-dev \
     musl-dev \
-    zlib-dev
+    zlib-dev && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apk del .tmp-build-deps
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# ВИДАЛЯЄМО тимчасові пакети (це звільнить сотні МБ всередині образу)
-RUN apk del .tmp-build-deps
-
+# Копіюємо решту коду
 COPY . .
 
+# Створюємо папки для статики та медіа
 RUN mkdir -p /vol/web/media /vol/web/static
